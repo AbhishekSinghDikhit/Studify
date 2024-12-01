@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, Request, File
+from fastapi import FastAPI, Form, Request, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.encoders import jsonable_encoder
@@ -10,11 +10,11 @@ from langchain.chains import RetrievalQA
 from transformers import pipeline
 from sentence_transformers import SentenceTransformer
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain.llms import HuggingFaceHub
 from typing import List
 import os
 import uvicorn
 import aiofiles
-from PyPDF2 import PdfReader
 import logging
 
 # Initialize logging
@@ -32,33 +32,80 @@ embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
 
 def file_processing(file_path):
     """Load and split PDF content into chunks."""
-    loader = PyPDFLoader(file_path)
-    data = loader.load()
-    text_content = ""
-    for page in data:
-        text_content += page.page_content
+    try:
+        loader = PyPDFLoader(file_path)
+        data = loader.load()
+        text_content = ""
+        text_content = "".join([page.page_content for page in data])
 
-    splitter = TokenTextSplitter(chunk_size=1000, chunk_overlap=100)
-    chunks = splitter.split_text(text_content)
-    documents = [Document(page_content=chunk) for chunk in chunks]
-    return documents
+        if not text_content.strip():
+            logging.error("No text content found in the PDF.")
+            raise ValueError("The uploaded PDF contains no text.")
+
+        splitter = TokenTextSplitter(chunk_size=800, chunk_overlap=100)
+        chunks = splitter.split_text(text_content)
+
+        valid_chunks = [chunk for chunk in chunks if chunk.strip()]
+        if not valid_chunks:
+            logging.error("No valid text chunks found.")
+            raise ValueError("Failed to split text into valid chunks.")
+
+        documents = [Document(page_content=chunk) for chunk in valid_chunks]
+        logging.info(f"Generated {len(documents)} valid document chunks.")
+        return documents
+    except Exception as e:
+        logging.error(f"Error during file processing: {e}")
+        raise
 
 def generate_questions(text):
     """Generate questions using a text generation model."""
+    if not text.strip():
+        logging.error("Empty text provided for question generation.")
+        raise ValueError("Cannot generate questions from empty text.")
+    
+    max_input_tokens = 800  # Reserve space for model output
+    truncated_text = text[:max_input_tokens]
+
     prompt = f"""
-    Based on the text below, generate questions:
-    {text}
+    {truncated_text}
     """
-    result = text_generator(prompt, max_length=200, num_return_sequences=1)
-    return result[0]["generated_text"].strip()
+    try:
+        result = text_generator(prompt, max_new_tokens=100, num_return_sequences=1)
+        return result[0]["generated_text"].strip()
+    except Exception as e:
+        logging.error(f"Error during question generation: {e}")
+        raise
 
 def llm_pipeline(file_path):
     """Generate questions and prepare the retrieval chain."""
     documents = file_processing(file_path)
+    if not documents:
+        logging.error("No documents created from the PDF.")
+        raise ValueError("No documents created from the PDF content.")
     vector_store = FAISS.from_documents(documents, embeddings)
     retriever = vector_store.as_retriever()
-    retrieval_qa_chain = RetrievalQA.from_chain_type(retriever=retriever, chain_type="stuff")
-    questions = [generate_questions(doc.page_content) for doc in documents]
+    huggingfacehub_api_token = "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"  
+
+    llm = HuggingFaceHub(
+        repo_id="gpt2",
+        model_kwargs={"temperature": 0.5, "max_length": 100},
+        huggingfacehub_api_token=huggingfacehub_api_token
+    )
+    retrieval_qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, chain_type="stuff")
+    questions = []
+    for doc in documents:
+        if len(questions) >= 10:  
+            break
+        try:
+            question = generate_questions(doc.page_content)
+            questions.append(question)
+        except Exception as e:
+            logging.error(f"Skipping a document due to error: {e}")
+
+    if not questions:
+        logging.error("No questions could be generated.")
+        raise ValueError("Failed to generate questions from the PDF.")
+
     return retrieval_qa_chain, questions
 
 @app.get("/")
@@ -67,8 +114,11 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/upload")
-async def upload(pdf_file: bytes = File(...), filename: str = Form(...)):
+async def upload(pdf_file: UploadFile = File(...), filename: str = Form(...)):
     """Handle PDF file upload."""
+    if not pdf_file.filename.endswith('.pdf'):
+        return {"error": "Only PDF files are allowed."}
+
     base_folder = "static/docs/"
     os.makedirs(base_folder, exist_ok=True)
     pdf_filename = os.path.join(base_folder, filename)
@@ -76,7 +126,8 @@ async def upload(pdf_file: bytes = File(...), filename: str = Form(...)):
     try:
         # Save the uploaded file
         async with aiofiles.open(pdf_filename, "wb") as f:
-            await f.write(pdf_file)
+            content = await pdf_file.read()
+            await f.write(content)
         logging.info(f"Uploaded file saved to: {pdf_filename}")
         return jsonable_encoder({"msg": "success", "pdf_filename": pdf_filename})
     except Exception as e:
@@ -86,8 +137,8 @@ async def upload(pdf_file: bytes = File(...), filename: str = Form(...)):
 @app.post("/analyze")
 async def analyze(pdf_filename: str = Form(...)):
     """Analyze the uploaded PDF and generate questions."""
-    base_folder = "static/docs/"
-    file_path = os.path.join(base_folder, pdf_filename)
+    # base_folder = "static/docs/"
+    file_path = pdf_filename
 
     # Validate file existence
     if not os.path.exists(file_path):
@@ -105,7 +156,6 @@ async def analyze(pdf_filename: str = Form(...)):
         return {"error": f"Analysis failed: {e}"}
 
     return {"questions": questions}
-
 
 @app.post("/verify")
 async def verify(pdf_filename: str = Form(...), user_answers: List[str] = Form(...)):
@@ -126,7 +176,7 @@ async def verify(pdf_filename: str = Form(...), user_answers: List[str] = Form(.
     for question, user_answer in zip(questions, user_answers):
         correct_answer = qa_chain.run(question)
         similarity_score = embeddings.similarity(user_answer, correct_answer)
-        is_correct = similarity_score > 0.75
+        is_correct = similarity_score > 0.75  # Consider making this threshold configurable
 
         result = {
             "question": question,

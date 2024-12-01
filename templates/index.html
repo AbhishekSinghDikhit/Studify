@@ -75,11 +75,13 @@
                     <div class="card shadow border-0 p-4 mb-3">
                         <div class="mb-3">
                             <label for="pdf-file" class="form-label">Upload your PDF file</label>
-                            <input type="file" class="form-control" id="pdf-file" accept="application/pdf">
+                            <input type="file" class="form-control " id="pdf-file" accept="application/pdf">
                         </div>
                         <div class="mb-3 text-end">
                             <button type="button" id="upload-btn" class="btn btn-success custom-btn w-100">Generate Questions</button>
                         </div>
+                        <div id="uploading-message" style="display: none;">Uploading...</div>
+                        <div id="processing-message" style="display: none;">Processing...</div>
                     </div>
                 </div>
             </div>
@@ -107,8 +109,6 @@
         </div>
     </section>
 
-    
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const uploadBtn = document.getElementById('upload-btn');
@@ -123,7 +123,6 @@
         let questions = []; // Store the generated questions
 
         // Handle PDF upload and question generation
-
         uploadBtn.addEventListener('click', async () => {
             const file = pdfFileInput.files[0];
             if (!file) {
@@ -202,7 +201,7 @@
             } catch (error) {
                 console.error('Upload failed:', error);
                 alert('An error occurred during file upload or processing.');
-            }
+ }
         });
 
         // Handle answer submission and verification
