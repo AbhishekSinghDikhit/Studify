@@ -7,7 +7,7 @@ from langchain.docstore.document import Document
 from langchain.document_loaders import PyPDFLoader
 from langchain.vectorstores import FAISS
 from langchain.chains import RetrievalQA
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 from sentence_transformers import SentenceTransformer
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.llms import HuggingFaceHub
@@ -25,8 +25,17 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+model_name = "google/flan-t5-small"
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 # Hugging Face models
-text_generator = pipeline("text-generation", model="gpt2", device=-1)  # Lightweight GPT-2
+text_generator = pipeline(
+    "text2text-generation",
+    model=model,
+    tokenizer=tokenizer,
+    device=-1  # Use CPU; change to 0 for GPU if available
+)
 embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
 embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
 
