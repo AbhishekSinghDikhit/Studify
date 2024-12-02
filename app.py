@@ -11,7 +11,9 @@ from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 from sentence_transformers import SentenceTransformer
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.llms import HuggingFaceHub
+from google.generativeai import configure, GenerativeModel
 from typing import List
+from PyPDF2 import PdfReader
 import os
 import uvicorn
 import aiofiles
@@ -25,62 +27,56 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-model_name = "google/flan-t5-small"
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+# model_name = "google/flan-t5-small"
+# model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-# Hugging Face models
-text_generator = pipeline(
-    "text2text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    device=-1  # Use CPU; change to 0 for GPU if available
-)
+
+# Initialize Gemini client
+configure(api_key="AIzaSyDGKtZ-K_xXzQMNsZdWIslYuiGFxE1CXG8")
+model = GenerativeModel("gemini-1.5-flash")
+    
+# # Hugging Face models
+# text_generator = pipeline(
+#     "text2text-generation",
+#     model=model,
+#     tokenizer=tokenizer,
+#     device=-1  # Use CPU; change to 0 for GPU if available
+# )
 embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
 embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
 
 def file_processing(file_path):
     """Load and split PDF content into chunks."""
     try:
-        loader = PyPDFLoader(file_path)
-        data = loader.load()
+        # Open the PDF file and extract text
+        reader = PdfReader(file_path)
         text_content = ""
-        text_content = "".join([page.page_content for page in data])
+        for page in reader.pages:
+            text_content += page.extract_text()
 
         if not text_content.strip():
-            logging.error("No text content found in the PDF.")
-            raise ValueError("The uploaded PDF contains no text.")
+            raise ValueError("The uploaded PDF contains no extractable text.")
 
+        # Split text into chunks
         splitter = TokenTextSplitter(chunk_size=800, chunk_overlap=100)
         chunks = splitter.split_text(text_content)
 
-        valid_chunks = [chunk for chunk in chunks if chunk.strip()]
-        if not valid_chunks:
-            logging.error("No valid text chunks found.")
-            raise ValueError("Failed to split text into valid chunks.")
+        documents = [Document(page_content=chunk) for chunk in chunks if chunk.strip()]
+        if not documents:
+            raise ValueError("No valid document chunks found.")
 
-        documents = [Document(page_content=chunk) for chunk in valid_chunks]
-        logging.info(f"Generated {len(documents)} valid document chunks.")
         return documents
     except Exception as e:
-        logging.error(f"Error during file processing: {e}")
+        logging.error(f"Error processing file: {e}")
         raise
 
 def generate_questions(text):
     """Generate questions using a text generation model."""
-    if not text.strip():
-        logging.error("Empty text provided for question generation.")
-        raise ValueError("Cannot generate questions from empty text.")
-    
-    max_input_tokens = 800  # Reserve space for model output
-    truncated_text = text[:max_input_tokens]
-
-    prompt = f"""
-    {truncated_text}
-    """
+    prompt = f"Generate a question from the following text:\n\n{text[:800]}"
     try:
-        result = text_generator(prompt, max_new_tokens=100, num_return_sequences=1)
-        return result[0]["generated_text"].strip()
+        response = model.generate_content(prompt)
+        return response.text.strip()
     except Exception as e:
         logging.error(f"Error during question generation: {e}")
         raise
@@ -91,19 +87,14 @@ def llm_pipeline(file_path):
     if not documents:
         logging.error("No documents created from the PDF.")
         raise ValueError("No documents created from the PDF content.")
+
+    # Assuming Gemini supports embeddings and vectorization
     vector_store = FAISS.from_documents(documents, embeddings)
     retriever = vector_store.as_retriever()
-    huggingfacehub_api_token = "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"  
 
-    llm = HuggingFaceHub(
-        repo_id="gpt2",
-        model_kwargs={"temperature": 0.5, "max_length": 100},
-        huggingfacehub_api_token=huggingfacehub_api_token
-    )
-    retrieval_qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, chain_type="stuff")
     questions = []
     for doc in documents:
-        if len(questions) >= 10:  
+        if len(questions) >= 10:
             break
         try:
             question = generate_questions(doc.page_content)
@@ -115,7 +106,7 @@ def llm_pipeline(file_path):
         logging.error("No questions could be generated.")
         raise ValueError("Failed to generate questions from the PDF.")
 
-    return retrieval_qa_chain, questions
+    return retriever, questions
 
 @app.get("/")
 async def index(request: Request):
@@ -146,20 +137,19 @@ async def upload(pdf_file: UploadFile = File(...), filename: str = Form(...)):
 @app.post("/analyze")
 async def analyze(pdf_filename: str = Form(...)):
     """Analyze the uploaded PDF and generate questions."""
-    # base_folder = "static/docs/"
     file_path = pdf_filename
 
-    # Validate file existence
     if not os.path.exists(file_path):
-        logging.error(f"File not found: {file_path}")
         return {"error": f"File not found: {file_path}"}
 
     try:
-        logging.info(f"Analyzing file: {file_path}")
-        qa_chain, questions = llm_pipeline(file_path)
-        logging.info(f"Generated {len(questions)} questions.")  # Log number of questions generated
-        if not questions:
-            return {"error": "No questions could be generated from the PDF content."}
+        documents = file_processing(file_path)
+        questions = []
+        for doc in documents:
+            if len(questions) >= 2:  # Limit to 10 questions
+                break
+            question = generate_questions(doc.page_content)
+            questions.append(question)
     except Exception as e:
         logging.error(f"Error during analysis: {e}")
         return {"error": f"Analysis failed: {e}"}
