@@ -7,7 +7,52 @@
     <title>Question Answer Generator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #3b3b58, #4e4e7f);
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .font-large {
+            font-size: 150px;
+        }
+
+        .custom-btn {
+            background-color: #6c757d;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .custom-btn:hover {
+            background-color: #5a6268;
+            transform: scale(1.1);
+        }
+
+        .section-heading {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 15px;
+            background: #1e1e2e;
+            border-top: 1px solid #444;
+        }
+
+        .list-group-item {
+            background-color: #2c2c45;
+        }
+
+        .questions-section, .results-section {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <!-- Header Section -->
@@ -29,11 +74,75 @@
                 <div class="col-12">
                     <div class="card shadow border-0 p-4 mb-3">
                         <div class="mb-3">
+                            <label for="input-type" class="form-label">Choose Input Type</label>
+                            <select id="input-type" class="form-select">
+                                <option value="pdf">Upload PDF</option>
+                                <option value="manual">Enter Content Manually</option>
+                            </select>
+                        </div>
+                        
+                        <!-- PDF Upload Section -->
+                        <div id="pdf-upload-section" style="display: block;">
                             <label for="pdf-file" class="form-label">Upload your PDF file</label>
                             <input type="file" class="form-control" id="pdf-file" accept="application/pdf">
+                            <button type="button" id="upload-pdf-btn" class="btn btn-primary mt-2">Upload PDF</button>
+                        </div>
+                        
+                        <!-- Manual Content Section -->
+                        <div id="manual-content-section" style="display: none;">
+                            <label for="manual-content" class="form-label">Enter Content</label>
+                            <textarea id="manual-content" class="form-control" rows="10" placeholder="Enter content here..."></textarea>
+                        </div>
+                        
+                        <div id="manual-content-section" style="display: none;">
+                            <label for="manual-content" class="form-label">Enter Content</label>
+                            <textarea id="manual-content" class="form-control" rows="10" placeholder="Enter content here..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="num-questions" class="form-label">Number of Questions</label>
+                            <input type="number" id="num-questions" class="form-control" placeholder="Enter number of questions">
+                        </div>
+                        <div class="mb-3">
+                            <label for="topic" class="form-label">Topic</label>
+                            <input type="text" id="topic" class="form-control" placeholder="Enter topic">
+                        </div>
+                        <div class="mb-3">
+                            <label for="difficulty" class="form-label">Difficulty Level</label>
+                            <select id="difficulty" class="form-select">
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div> 
+                        <div class="mb-3">
+                            <label for="cognitive-level" class="form-label">Cognitive Level</label>
+                            <select id="cognitive-level" class="form-select">
+                                <option value="Remember">Remember</option>
+                                <option value="Understand">Understand</option>
+                                <option value="Apply">Apply</option>
+                                <option value="Analyze">Analyze</option>
+                                <option value="Evaluate">Evaluate</option>
+                                <option value="Create">Create</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="total-marks" class="form-label">Enter Total Marks of the Paper</label>
+                            <input type="number" id="total-marks" class="form-control" placeholder="Enter total marks (e.g., 100)" required>
+                        </div>
+                        
+                        <div id="marks-per-question-section" style="display: none;">
+                            <label for="marks-per-question" class="form-label">Enter Marks per MCQ Question</label>
+                            <input type="number" id="marks-per-question" class="form-control" placeholder="Enter marks per MCQ question" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="question-type" class="form-label">Question Type</label>
+                            <select id="question-type" class="form-select">
+                                <option value="theory">Theory</option>
+                                <option value="mcq">MCQ</option>
+                            </select>
                         </div>
                         <div class="mb-3 text-end">
-                            <button type="button" id="upload-btn" class="btn btn-success custom-btn w-100">Generate Questions</button>
+                            <button type="button" id="generate-questions-btn" class="btn btn-success custom-btn w-100">Generate Questions</button>
                         </div>
                         <div id="uploading-message" style="display: none;">Uploading...</div>
                         <div id="processing-message" style="display: none;">Processing...</div>
@@ -41,7 +150,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section>   
 
     <!-- Questions Section -->
     <section id="questions-section" class="questions-section">
@@ -65,6 +174,344 @@
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="scripts.js"></script> 
+    <script>
+        const uploadBtn = document.getElementById('upload-btn');
+        const pdfFileInput = document.getElementById('pdf-file');
+        const questionsSection = document.getElementById('questions-section');
+        const resultsSection = document.getElementById('results-section');
+        const questionsList = document.getElementById('questions-list');
+        const resultsList = document.getElementById('results-list');
+        const answersForm = document.getElementById('answers-form');
+        const numQuestionsInput = document.getElementById('num-questions');
+        const topicInput = document.getElementById('topic');
+        const difficultyInput = document.getElementById('difficulty');
+        const cognitiveLevelInput = document.getElementById('cognitive-level');
+        const questionTypeInput = document.getElementById('question-type');
+        const inputType = document.getElementById('input-type');
+        const pdfUploadSection = document.getElementById('pdf-upload-section');
+        const manualContentSection = document.getElementById('manual-content-section');
+        const uploadPdfBtn = document.getElementById('upload-pdf-btn');
+        const generateQuestionsBtn = document.getElementById('generate-questions-btn');
+
+        let uploadedPdfFilename = null;
+        let pdfFilename = ''; // Store the uploaded PDF filename
+        let questions = []; // Store the generated questions
+
+        inputType.addEventListener('change', () => {
+            if (inputType.value === 'pdf') {
+                pdfUploadSection.style.display = 'block';
+                manualContentSection.style.display = 'none';
+            } else {
+                pdfUploadSection.style.display = 'none';
+                manualContentSection.style.display = 'block';
+            }
+        });
+
+        // Toggle marks per question section based on question type
+        questionType.addEventListener('change', () => {
+            if (questionType.value === 'mcq') {
+                marksPerQuestionSection.style.display = 'block';
+            } else {
+                marksPerQuestionSection.style.display = 'none';
+            }
+        });
+        // Handle PDF upload
+        uploadPdfBtn.addEventListener('click', async () => {
+            const file = document.getElementById('pdf-file').files[0];
+            if (!file) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('pdf_file', file);
+            formData.append('filename', file.name);
+
+            const uploadResponse = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const uploadResult = await uploadResponse.json();
+            if (uploadResult.error) {
+                alert(uploadResult.error);
+                return;
+            }
+
+            uploadedPdfFilename = uploadResult.pdf_filename; // Save the filename for later use
+            alert('PDF uploaded successfully!');
+        });
+        generateQuestionsBtn.addEventListener('click', async () => {
+            const totalMarks = parseInt(totalMarksInput.value, 10);
+            if (!totalMarks || totalMarks <= 0) {
+                alert('Please enter a valid total marks value.');
+                return;
+            }
+
+            if (questionType.value === 'theory') {
+                // Theory question paper generation
+                const marksDistribution = distributeMarksTheory(totalMarks);
+                if (!marksDistribution) {
+                    alert('Unable to distribute marks correctly.');
+                    return;
+                }
+
+                const analyzeResponse = await fetch('/analyze-theory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ totalMarks: totalMarks, marksDistribution: marksDistribution }),
+                });
+
+                const analyzeResult = await analyzeResponse.json();
+                if (analyzeResult.error) {
+                    alert(analyzeResult.error);
+                    return;
+                }
+
+                sessionStorage.setItem('questions', JSON.stringify(analyzeResult.questions));
+                window.location.href = '/questions';
+            } else {
+                // MCQ question paper generation
+                const marksPerQuestion = parseInt(document.getElementById('marks-per-question').value, 10);
+                if (!marksPerQuestion || marksPerQuestion <= 0) {
+                    alert('Please enter a valid marks per question value.');
+                    return;
+                }
+
+                const numberOfQuestions = Math.floor(totalMarks / marksPerQuestion);
+                if (numberOfQuestions === 0) {
+                    alert('Marks per question is too large for the given total marks.');
+                    return;
+                }
+
+                const analyzeResponse = await fetch('/analyze-mcq', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ totalMarks: totalMarks, marksPerQuestion: marksPerQuestion, numberOfQuestions: numberOfQuestions }),
+                });
+
+                const analyzeResult = await analyzeResponse.json();
+                if (analyzeResult.error) {
+                    alert(analyzeResult.error);
+                    return;
+                }
+
+                sessionStorage.setItem('questions', JSON.stringify(analyzeResult.questions));
+                window.location.href = '/questions';
+            }
+                });
+                const generateBtn = document.getElementById('generate-btn');
+                generateBtn.addEventListener('click', async () => {
+                    if (inputType.value === 'pdf') {
+                        const file = document.getElementById('pdf-file').files[0];
+                        if (!file) {
+                            alert('Please upload a PDF file.');
+                            return;
+                        }
+
+                        const formData = new FormData();
+                        formData.append('pdf_file', file);
+                        formData.append('filename', file.name);
+
+                        const uploadResponse = await fetch('/upload', {
+                            method: 'POST',
+                            body: formData,
+                        });
+
+                        const uploadResult = await uploadResponse.json();
+                        if (uploadResult.error) {
+                            alert(uploadResult.error);
+                            return;
+                        }
+
+                        const pdfFilename = uploadResult.pdf_filename;
+
+                        const analyzeResponse = await fetch('/analyze', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({ pdf_filename: pdfFilename }),
+                        });
+
+                        const analyzeResult = await analyzeResponse.json();
+                        if (analyzeResult.error) {
+                            alert(analyzeResult.error);
+                            return;
+                        }
+
+                        sessionStorage.setItem('questions', JSON.stringify(analyzeResult.questions));
+                        window.location.href = '/questions';
+                    } else {
+                        const manualContent = document.getElementById('manual-content').value;
+                        if (!manualContent.trim()) {
+                            alert('Please enter some content.');
+                            return;
+                        }
+
+                        const analyzeResponse = await fetch('/analyze-manual', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ content: manualContent }),
+                        });
+
+                        const analyzeResult = await analyzeResponse.json();
+                        if (analyzeResult.error) {
+                            alert(analyzeResult.error);
+                            return;
+                        }
+
+                        sessionStorage.setItem('questions', JSON.stringify(analyzeResult.questions));
+                        window.location.href = '/questions';
+                    }
+        });
+
+        function distributeMarksTheory(totalMarks) {
+            let remainingMarks = totalMarks;
+            const marksDistribution = [];
+            const marksOptions = [2, 4, 8]; // Available mark options
+        
+            // Distribute marks for theory questions
+            while (remainingMarks >= 2) {
+                const randomMark = marksOptions[Math.floor(Math.random() * marksOptions.length)];
+                if (remainingMarks - randomMark >= 0) {
+                    marksDistribution.push(randomMark);
+                    remainingMarks -= randomMark;
+                }
+            }
+        
+            // Ensure the total marks match the required total
+            if (remainingMarks !== 0) {
+                return null; // If the remaining marks don't match, return null
+            }
+        
+            return marksDistribution;
+        }
+
+        // Handle PDF upload and question generation
+        uploadBtn.addEventListener('click', async () => {
+            const file = pdfFileInput.files[0];
+            const numQuestions = parseInt(numQuestionsInput.value, 10);
+            const topic = topicInput.value.trim();
+            const difficulty = difficultyInput.value;
+            const cognitiveLevel = cognitiveLevelInput.value;
+            const questionType = questionTypeInput.value;
+
+            if (!numQuestions || !topic || !difficulty || !cognitiveLevel || !questionType) {
+                alert('Please fill in all fields.');
+                return;
+            }
+            if (!file) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+
+            if (!numQuestions || !topic || !difficulty) {
+                alert('Please fill in all fields.');
+                return;
+            }
+
+            // Show the uploading message
+            document.getElementById('uploading-message').style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('pdf_file', file); // Ensure the key matches the backend
+            formData.append('filename', file.name); // Include filename
+
+            try {
+                // Upload PDF to backend
+                const uploadResponse = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                // Check if upload was successful
+                if (!uploadResponse.ok) {
+                    const error = await uploadResponse.json();
+                    alert(`Error: ${error.detail}`);
+                    return;
+                }
+
+                // Get the PDF filename from the backend response
+                const uploadResult = await uploadResponse.json();
+                pdfFilename = uploadResult.pdf_filename; 
+                console.log(`File uploaded: ${pdfFilename}`);
+                
+                // Hide the uploading message
+                document.getElementById('uploading-message').style.display = 'none';
+                
+                // Show the processing message
+                document.getElementById('processing-message').style.display = 'block';
+
+                // Generate questions from the uploaded PDF
+                const analyzeResponse = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        pdf_filename: pdfFilename,
+                        num_questions: numQuestions,
+                        topic: topic,
+                        difficulty: difficulty,
+                        cognitive_level: cognitiveLevel,
+                        question_type: questionType,
+                    }),
+                });
+
+                // Handle analyze response
+                const analyzeResult = await analyzeResponse.json();
+
+                // Check for errors in the analysis response
+                if (analyzeResult.error) {
+                    alert(analyzeResult.error);
+                    return;
+                }
+
+                sessionStorage.setItem('questions', JSON.stringify(analyzeResult.questions));
+                window.location.href = '/questions';
+                });
+
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('An error occurred during file upload or processing.');
+ }
+        });
+
+        // Handle answer submission and verification
+        answersForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const userAnswers = questions.map((_, index) => {
+                return document.getElementById(`answer-${index}`).value;
+            });
+
+            // Verify the answers
+            const verifyResponse = await fetch('/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    pdf_filename: pdfFilename,
+                    user_answers: JSON.stringify(userAnswers),
+                    question_type: questionTypeInput.value,
+                })
+            });
+
+            // Handle verification response
+            const verifyResult = await verifyResponse.json();
+
+            // Display the results
+            resultsList.innerHTML = '';
+            verifyResult.results.forEach((result, index) => {
+                resultsList.innerHTML += `
+                    <div class="mb-3">
+                        <p><strong>Q${index + 1}:</strong> ${result.question}</p>
+                        <p><strong>Your Answer:</strong> ${result.user_answer}</p>
+                        <p><strong>Result:</strong> ${result.is_correct ? 'Correct' : 'Incorrect'}</p>
+                        ${!result.is_correct ? `<p><strong>Correct Answer:</strong> ${result.correct_answer}</p>` : ''}
+                    </div>
+                `;
+            });
+
+            // Show the results section
+            resultsSection.style.display = 'block';
+        });
+    </script>
 </body>
 </html>
