@@ -35,6 +35,7 @@ app.add_middleware(
 )
 
 # Static and template directories
+app.mount("/templates", StaticFiles(directory="frontend/templates"), name="templates")
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 templates = Jinja2Templates(directory="frontend/templates")
 
@@ -68,11 +69,8 @@ async def auth_page(request: Request):
     return templates.TemplateResponse("auth.html", {"request": request})
 
 @app.get("/question-generator")
-async def question_generator(request: Request, user=Depends(get_current_user)):
-    """Question Generator page."""
-    if not user:
-        return RedirectResponse(url="/auth")
-    return templates.TemplateResponse("question-generator.html", {"request": request, "user": user})
+async def question_generator(request: Request):
+    return templates.TemplateResponse("question-generator.html", {"request": request})
 
 @app.get("/questions")
 async def questions_page(request: Request, user=Depends(get_current_user)):
