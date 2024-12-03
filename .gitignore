@@ -13,3 +13,4 @@ venv/
 
 # Ignore logs
 *.log
+config/eduai-17e96-firebase-adminsdk-mue14-f016774857.json
