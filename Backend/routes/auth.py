@@ -4,6 +4,8 @@ from utils.firebase_config import verify_token
 from fastapi.responses import RedirectResponse
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+app.mount("/static", StaticFiles(directory="templates"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 # Dependency to get current user from Firebase
 def get_current_user(token: str = Depends(oauth2_scheme)):

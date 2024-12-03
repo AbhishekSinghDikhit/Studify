@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In / Sign Up</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    /* General Styles */
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #3b3b58, #4e4e7f); /* Apply gradient from home page */
+      font-family: 'Arial', sans-serif;
+      color: #fff;
+    }
+
+    .container {
+      display: flex;
+      width: 90%;
+      max-width: 1200px;
+      height: 80%;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      border-radius: 15px;
+      overflow: hidden;
+    }
+
+    /* Left Section */
+    .left-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.2); /* Transparent white background */
+      backdrop-filter: blur(10px);
+      text-align: center;
+    }
+
+    .left-section h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    .left-section p {
+      font-size: 1.2rem;
+      line-height: 1.5;
+    }
+
+    /* Right Section */
+    .right-section {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #fff;
+    }
+
+    .auth-card {
+      width: 90%;
+      max-width: 400px;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .auth-card p {
+      margin-bottom: 20px;
+      font-size: 1.1rem;
+      color: #333;
+    }
+
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #4285f4;
+      color: #fff;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .google-btn:hover {
+      background: #357ae8;
+    }
+
+    .google-icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Left Section -->
+    <div class="left-section">
+      <h1>Welcome to Learnify!</h1>
+      <p>Revolutionizing Learning with AI</p>
+      <p>Empower your education with cutting-edge tools designed to simplify your learning experience.</p>
+    </div>
+
+    <!-- Right Section -->
+    <div class="right-section">
+      <div class="auth-card">
+        <p>Login to continue</p>
+        <button id="google-signin" class="google-btn">
+          <img src="/static/search.png" alt="Google Icon" class="google-icon">
+          Sign in with Google
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js"></script>
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyA0jZcDLS9b31fVf5Wb3yk4XNBaC9lVYkw",
+      authDomain: "eduai-17e96.firebaseapp.com",
+      projectId: "eduai-17e96",
+      storageBucket: "eduai-17e96.appspot.com",
+      messagingSenderId: "46846141128",
+      appId: "1:46846141128:web:9671893770e1d546a33bfd",
+      measurementId: "G-993XBM7FB2",
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.getAuth(app);
+
+    // Google Sign-In Logic
+    document.getElementById('google-signin').addEventListener('click', async () => {
+        const provider = new firebase.GoogleAuthProvider();
+
+        try {
+            const result = await firebase.signInWithPopup(auth, provider);
+            const user = result.user;
+            console.log("User signed in:", user);
+
+            // Get user token and store in localStorage or send to server
+            const token = await firebase.getIdToken(user);
+            console.log("User token:", token);
+
+            // Redirect or perform post-login actions
+            window.location.href = "/question-generator";  // Redirect after successful login
+        } catch (error) {
+            console.error("Error during sign-in:", error);
+            alert("Sign-in failed. Please try again.");
+        }
+    });
+  </script>
+</body>
+</html>

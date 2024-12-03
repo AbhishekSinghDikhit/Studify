@@ -10,7 +10,9 @@
             background: linear-gradient(135deg, #3b3b58, #4e4e7f);
             color: #fff;
             font-family: 'Arial', sans-serif;
+            min-height: 100vh;
         }
+
         .custom-btn {
             background-color: #6c757d;
             border-radius: 10px;
@@ -18,25 +20,33 @@
             font-weight: bold;
             transition: all 0.3s ease;
         }
+
         .custom-btn:hover {
             background-color: #5a6268;
             transform: scale(1.1);
+        }
+
+        .container {
+            padding-top: 30px;
+        }
+
+        .card {
+            background-color: #333;
+            color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
     </style>
 </head>
 <body>
     <section>
         <div class="container-fluid text-center py-5">
-            <h3 class="display-4 animate__animated animate__fadeInDown animate__delay-1s">
-                Question Generator and Evaluator
-            </h3>
-            <p class="animate__animated animate__fadeInUp animate__delay-2s">
-                Upload your PDF and let us generate questions for you!
-            </p>
+            <h3 class="display-4">Question Generator and Evaluator</h3>
+            <p>Upload your PDF or enter content manually to generate questions!</p>
         </div>
     </section>
 
-    <div class="container mt-5">
+    <div class="container">
         <div class="card p-4">
             <label for="input-type" class="form-label">Choose Input Type</label>
             <select id="input-type" class="form-select mb-3">
@@ -49,20 +59,20 @@
                 <label for="pdf-file" class="form-label">Upload PDF File</label>
                 <input type="file" id="pdf-file" class="form-control mb-3" accept="application/pdf">
                 <label for="topic" class="form-label">Topic</label>
-                <input type="text" id="topic" class="form-control mb-3">
+                <input type="text" id="topic" class="form-control mb-3" required>
                 <label for="difficulty" class="form-label">Difficulty Level</label>
-                <select id="difficulty" class="form-select mb-3">
+                <select id="difficulty" class="form-select mb-3" required>
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
                     <option value="hard">Hard</option>
                 </select>
                 <label for="question-type-pdf" class="form-label">Question Type</label>
-                <select id="question-type-pdf" class="form-select mb-3">
+                <select id="question-type-pdf" class="form-select mb-3" required>
                     <option value="mcq">MCQ</option>
                     <option value="theory">Theory</option>
                 </select>
                 <label for="total-marks-pdf" class="form-label">Total Marks</label>
-                <input type="number" id="total-marks-pdf" class="form-control mb-3">
+                <input type="number" id="total-marks-pdf" class="form-control mb-3" required>
                 <div id="marks-per-question-section" style="display: none;">
                     <label for="marks-per-question" class="form-label">Marks Per Question</label>
                     <input type="number" id="marks-per-question" class="form-control mb-3">
@@ -72,28 +82,17 @@
             <!-- Manual Entry Section -->
             <div id="manual-entry-section" style="display: none;">
                 <label for="manual-content" class="form-label">Enter Content</label>
-                <textarea id="manual-content" class="form-control mb-3" rows="5"></textarea>
+                <textarea id="manual-content" class="form-control mb-3" rows="5" required></textarea>
                 <label for="question-type-manual" class="form-label">Question Type</label>
-                <select id="question-type-manual" class="form-select mb-3">
+                <select id="question-type-manual" class="form-select mb-3" required>
                     <option value="mcq">MCQ</option>
                     <option value="theory">Theory</option>
                 </select>
-                <label for="cognitive-level-manual" class="form-label">Cognitive Level</label>
-                <select id="cognitive-level-manual" class="form-select mb-3">
-                    <option value="remember">Remember</option>
-                    <option value="understand">Understand</option>
-                    <option value="apply">Apply</option>
-                    <option value="analyze">Analyze</option>
-                    <option value="evaluate">Evaluate</option>
-                    <option value="create">Create</option>
-                </select>
                 <label for="total-marks-manual" class="form-label">Total Marks</label>
-                <input type="number" id="total-marks-manual" class="form-control mb-3">
+                <input type="number" id="total-marks-manual" class="form-control mb-3" required>
             </div>
 
             <button id="generate-questions-btn" class="btn btn-success custom-btn w-100">Generate Questions</button>
-            <div id="uploading-message" style="display: none;">Uploading...</div>
-            <div id="processing-message" style="display: none;">Processing...</div>
         </div>
     </div>
 
@@ -123,19 +122,23 @@
         });
 
         document.getElementById('generate-questions-btn').addEventListener('click', async () => {
-            const inputType = document.getElementById('input-type').value;
-            const endpoint = inputType === 'pdf' ? '/analyze' : '/analyze-manual';
+            const inputTypeValue = document.getElementById('input-type').value;
+            const endpoint = inputTypeValue === 'pdf' ? '/analyze' : '/analyze-manual';
             const formData = new FormData();
 
-        
             if (inputTypeValue === 'pdf') {
                 const pdfFile = document.getElementById('pdf-file').files[0];
+                if (!pdfFile) {
+                    alert("Please upload a PDF file.");
+                    return;
+                }
+
                 formData.append('pdf_file', pdfFile);
                 formData.append('topic', document.getElementById('topic').value);
                 formData.append('difficulty', document.getElementById('difficulty').value);
                 formData.append('question_type', questionTypePdf.value);
                 formData.append('total_marks', document.getElementById('total-marks-pdf').value);
-        
+
                 if (questionTypePdf.value === 'mcq') {
                     formData.append('marks_per_question', document.getElementById('marks-per-question').value);
                 }
@@ -144,13 +147,13 @@
                 formData.append('question_type', document.getElementById('question-type-manual').value);
                 formData.append('total_marks', document.getElementById('total-marks-manual').value);
             }
-        
+
             try {
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     body: formData,
                 });
-        
+
                 const data = await response.json();
                 if (data.questions) {
                     sessionStorage.setItem('questions', JSON.stringify(data.questions));
@@ -159,9 +162,10 @@
                     alert(data.error || 'Error generating questions.');
                 }
             } catch (error) {
-                console.error('Error during fetch:', error);
+                console.error('Error:', error);
+                alert('An error occurred while generating questions.');
             }
-        });       
+        });
     </script>
 </body>
 </html>
