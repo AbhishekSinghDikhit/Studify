@@ -15,9 +15,6 @@
         .font-large {
             font-size: 150px;
         }
-        .font-large {
-            font-size: 150px;
-        }
 
         .custom-btn {
             background-color: #6c757d;
@@ -52,13 +49,6 @@
         .questions-section, .results-section {
             display: none;
         }
-        
-        textarea {
-            transition: all 0.3s ease;
-        }
-        textarea:focus {
-            height: 150px;
-        }
     </style>
 </head>
 <body>
@@ -69,73 +59,56 @@
             <button type="submit" class="btn btn-primary mt-3">Submit Answers</button>
         </form>
     </div>
-
+    
     <script>
         const questions = JSON.parse(sessionStorage.getItem('questions')) || [];
         const questionsList = document.getElementById('questions-list');
-
-        // Set the questions list
-        questions = analyzeResult.questions;
-
-        // Show the questions section
-        questionsSection.style.display = 'block';
-
-        // Hide the processing message
-        document.getElementById('processing-message').style.display = 'none';
-
-        // Populate questions in the frontend
-        questionsList.innerHTML = '';
+    
         questions.forEach((question, index) => {
-            if (questionType === 'mcq') {
-                const [qText, ...options] = question.split('\n');
-                questionsList.innerHTML += `
-                    <div class="mb-3">
-                        <p><strong>Q${index + 1}:</strong> ${qText}</p>
-                        ${options.map((opt, i) => `
-                            <div>
-                                <input type="radio" id="q${index}-opt${i}" name="q${index}" value="${opt}">
-                                <label for="q${index}-opt${i}">${opt}</label>
-                            </div>
-                        `).join('')}
+            const questionHTML = `
+                <div class="mb-3">
+                    <p><strong>Q${index + 1} (${question.marks} marks):</strong> ${question.question}</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="answer-${index}" id="option-a-${index}" value="A">
+                        <label class="form-check-label" for="option-a-${index}">Option A</label>
                     </div>
-                `;
-            } else {
-                questionsList.innerHTML += `
-                    <div class="mb-3">
-                        <p><strong>Q${index + 1}:</strong> ${question}</p>
-                        <textarea class="form-control" id="answer-${index}" placeholder="Enter your answer"></textarea>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="answer-${index}" id="option-b-${index}" value="B">
+                        <label class="form-check-label" for="option-b-${index}">Option B</label>
                     </div>
-                `;
-            }
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="answer-${index}" id="option-c-${index}" value="C">
+                        <label class="form-check-label" for="option-c-${index}">Option C</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="answer-${index}" id="option-d-${index}" value="D">
+                        <label class="form-check-label" for="option-d-${index}">Option D</label>
+                    </div>
+                </div>
+            `;
+            questionsList.innerHTML += questionHTML;
         });
-
-        // Handle answer submission
-        const answersForm = document.getElementById('answers-form');
-        answersForm.addEventListener('submit', async (e) => {
+    
+        document.getElementById('answers-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const userAnswers = questions.map((_, index) => 
-                document.getElementById(`answer-${index}`).value
+                document.querySelector(`input[name="answer-${index}"]:checked`)?.value || null
             );
-
+    
             const verifyResponse = await fetch('/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    pdf_filename: sessionStorage.getItem('pdf_filename'),
+                    pdf_filename: sessionStorage.getItem('pdf_filename') || '',
                     user_answers: userAnswers,
-                    question_type: sessionStorage.getItem('question_type'),
+                    question_type: sessionStorage.getItem('question_type') || 'mcq',
                 }),
             });
-
+    
             const verifyResult = await verifyResponse.json();
-
-            if (verifyResult.error) {
-                alert(verifyResult.error);
-                return;
-            }
-
-            console.log(verifyResult.results); // Handle results as needed
+            if (verifyResult.error) alert(verifyResult.error);
+            else console.log(verifyResult.results);
         });
-    </script>
+    </script>    
 </body>
 </html>

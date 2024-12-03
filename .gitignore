@@ -1,0 +1,15 @@
+# Ignore environment files
+.env
+
+# Ignore Firebase credentials
+D:/Question-_Paper_gen/config/eduai-17e96-firebase-adminsdk-mue14-f016774857.json
+
+# Ignore Python compiled files
+*.pyc
+__pycache__/
+
+# Ignore virtual environment
+venv/
+
+# Ignore logs
+*.log
