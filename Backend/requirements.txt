@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-PyPDF2
-pymongo
-firebase-admin
-langchain

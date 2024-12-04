@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learnify - Empowering Education</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000; /* Set background to black */
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+        }
+        .welcome-message {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 50px; /* Add spacing below the welcome message */
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.2);
+        }
+        .tool-card {
+            background-color: #fff; /* Set the card background to white */
+            border-radius: 15px;
+            height: 300px; /* Ensure all cards have the same height */
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+        }
+        .tool-card:hover {
+            transform: scale(1.05); /* Slight scale on hover */
+            box-shadow: 0px 5px 30px rgba(255, 255, 255, 0.5); /* Glow effect */
+        }
+        .tool-card h5 {
+            color: #000; /* Ensure text inside the card is readable */
+        }
+        .tool-card p {
+            color: #333; /* Slightly lighter text for descriptions */
+        }
+        .navbar {
+            background-color: #343a40;
+        }
+        .navbar-brand, .nav-link {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Learnify</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/auth">Sign-In/Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="welcome-message">
+            <h1>Welcome to Learnify!</h1>
+            <p>Revolutionizing Learning with AI</p>
+            <p>Empower your education with cutting-edge tools designed to simplify your learning experience. Whether you need to generate and evaluate questions, summarize PDFs, or get precise answers to your queries, EduAI has you covered.</p>
+        </div>
+
+        <div class="row mt-4">
+            <!-- Question Generator and Evaluator -->
+            <div class="col-md-4 mb-4">
+                <div class="card tool-card p-3 d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="text-center">Question Generator and Evaluator</h5>
+                        <p>Upload your content and generate customized questions. Evaluate your answers and improve your skills.</p>
+                    </div>
+                    <a class="btn btn-primary w-100 mt-3" href="/templates/question_generator.html">Explore</a>
+                </div>
+            </div>
+
+            <!-- PDF Summarizer -->
+            <div class="col-md-4 mb-4">
+                <div class="card tool-card p-3 d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="text-center">PDF Summarizer</h5>
+                        <p>Upload a PDF and get a concise summary in seconds. Simplify your study materials effortlessly.</p>
+                    </div>
+                    <a href="/pdf-summarizer" class="btn btn-primary w-100 mt-3">Explore</a>
+                </div>
+            </div>
+
+            <!-- Question and Answer Tool -->
+            <div class="col-md-4 mb-4">
+                <div class="card tool-card p-3 d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="text-center">Question & Answer Tool</h5>
+                        <p>Ask questions and get precise answers by analyzing your uploaded content.</p>
+                    </div>
+                    <a href="/qa-tool" class="btn btn-primary w-100 mt-3">Explore</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log("Welcome to EduAI Home Page!");
+    </script>
+</body>
+</html>
