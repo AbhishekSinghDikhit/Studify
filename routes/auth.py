@@ -1,22 +1,24 @@
-from fastapi import Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends
 from utils.firebase_config import verify_token
-from fastapi.responses import RedirectResponse
+from models.user import create_user, get_user_by_google_id
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-app.mount("/static", StaticFiles(directory="templates"), name="static")
-templates = Jinja2Templates(directory="templates")
+router = APIRouter()
 
-# Dependency to get current user from Firebase
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = verify_token(token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return user
+@router.post("/auth/login")
+def login(id_token: str):
+    """Login route to verify token and fetch/create user."""
+    decoded_token = verify_token(id_token)
+    if decoded_token:
+        google_id = decoded_token["uid"]
+        name = decoded_token["name"]
+        email = decoded_token["email"]
+        picture = decoded_token["picture"]
 
-# Middleware to check if the user is logged in and redirect if necessary
-@app.get("/question-generator")
-async def question_generator(request: Request, user: dict = Depends(get_current_user)):
-    if not user:
-        return RedirectResponse(url="/sign-in")
-    return templates.TemplateResponse("question-generator.html", {"request": request})
+        # Add user to database
+        create_user(google_id, name, email, picture)
+
+        # Fetch user
+        user = get_user_by_google_id(google_id)
+        return {"message": "User logged in successfully", "user": dict(user)}
+    else:
+        return {"error": "Invalid ID token"}

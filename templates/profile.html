@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/index.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <img src="../static/StudifyAI-logo.png" alt="StudifyAI" class="me-3">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/auth">Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Dashboard -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <!-- Profile Header -->
+            <div class="d-flex align-items-center mb-4">
+                <img id="user-picture" src="" alt="Profile Picture" class="rounded-circle me-3" width="80" height="80">
+                <div>
+                    <h3 id="user-name" class="mb-0">Welcome, User!</h3>
+                    <p id="user-email" class="text-muted">user@example.com</p>
+                </div>
+            </div>
+    
+            <!-- User Stats -->
+            <div class="row mb-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Uploaded PDFs</h5>
+                            <p class="card-text display-6">15</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Questions Generated</h5>
+                            <p class="card-text display-6">120</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Accuracy</h5>
+                            <p class="card-text display-6">85%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Summaries Created</h5>
+                            <p class="card-text display-6">10</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Quick Actions -->
+            <h4 class="mb-3">Quick Actions</h4>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card gradient-primary text-white text-center p-4">
+                        <h5>Generate Questions</h5>
+                        <p>Create customized questions for your study material.</p>
+                        <a href="/question-generator" class="btn btn-light">Start Now</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card gradient-muted text-white text-center p-4">
+                        <h5>Summarize PDFs</h5>
+                        <p>Simplify complex content with AI-powered summaries.</p>
+                        <a href="/pdf-summarizer" class="btn btn-light">Upload PDF</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card gradient-alert text-white text-center p-4">
+                        <h5>Ask Questions</h5>
+                        <p>Get precise answers to all your study-related queries.</p>
+                        <a href="/qa-tool" class="btn btn-light">Start Asking</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section> 
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>About Studify</h5>
+                    <p>Empowering students with AI tools for better learning.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light">Home</a></li>
+                        <li><a href="/about" class="text-light">About</a></li>
+                        <li><a href="/contact" class="text-light">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact Us</h5>
+                    <p>Email: <a href="mailto:support@studify.com" class="text-light">support@studify.com</a></p>
+                    <p>Phone: +91 88178 01639</p>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <p>&copy; 2024 Studify, All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        async function fetchProfile() {
+            try {
+                const response = await fetch('/profile', { method: 'GET', credentials: 'include' });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch profile');
+                }
+        
+                const data = await response.json();
+                if (data.error) {
+                    console.error(`Error: ${data.error}`);
+                    return null;
+                }
+        
+                return data.profile;
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+                return null;
+            }
+        }
+        
+        async function populateProfilePage() {
+            const profile = await fetchProfile();
+        
+            if (profile) {
+                document.getElementById("profile-picture").src = profile.picture;
+                document.getElementById("profile-name").textContent = profile.name;
+                document.getElementById("profile-email").textContent = profile.email;
+            } else {
+                console.error("Failed to load profile data");
+                window.location.href = "/auth.html"; 
+            }
+        }
+        
+        // Call this function when the page loads
+        document.addEventListener("DOMContentLoaded", populateProfilePage);        
+    </script>   
+</body>
+</html>
