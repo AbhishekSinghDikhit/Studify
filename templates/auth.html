@@ -17,7 +17,6 @@
         <p>Empower your education with cutting-edge tools designed to simplify your learning experience.</p>
       </div>
 
-      <!-- Right Section -->
       <div class="col-md-6 right-section">
         <div class="auth-card">
           <h2>Login to continue</h2>
@@ -35,7 +34,7 @@
     import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
     
-    // Firebase configuration
+    // Firebase ka congiguration
     const firebaseConfig = {
       apiKey: "AIzaSyA0jZcDLS9b31fVf5Wb3yk4XNBaC9lVYkw",
       authDomain: "eduai-17e96.firebaseapp.com",
@@ -46,28 +45,25 @@
       measurementId: "G-993XBM7FB2",
     };
     
-    // Initialize Firebase
+    // Firebase initialization
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const auth = getAuth(app);
     
-    // Manage Authentication State
+    // checking authentication state
       auth.onAuthStateChanged(function(user) {
-        // Wait until the DOM is fully loaded
         window.onload = function() {
             const profileSection = document.getElementById('profileSection');
     
-            // Check if the profileSection exists
+            // Check if profileSection is present
             if (profileSection) {
                 if (user) {
-                    // User is signed in, update the profile section
                     profileSection.innerHTML = `
                         <div>Welcome, ${user.displayName}</div>
                         <div>Email: ${user.email}</div>
                         <button onclick="signOut()">Sign Out</button>
                     `;
                 } else {
-                    // No user is signed in, show the login prompt
                     profileSection.innerHTML = `
                         <button onclick="signIn()">Sign In</button>
                     `;

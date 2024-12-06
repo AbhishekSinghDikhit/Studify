@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="/static/index.css">
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <img src="../static/StudifyAI-logo.png" alt="StudifyAI" style="height: 40px;">
@@ -28,7 +27,6 @@
         </div>
     </nav>
 
-    <!-- Main Content Section -->
     <div class="container mt-4">
         <h1>Generated Questions</h1>
         <form id="answers-form">
@@ -41,13 +39,12 @@
     <footer class="bg-dark text-light py-4 mt-5">
         <div class="container">
             <div class="row">
-                <!-- Company Info Section -->
+            
                 <div class="col-12 col-md-4 mb-3">
                     <h5>About Studify</h5>
                     <p>Empowering both students and educators by providing access to advanced AI tools that enhance learning experiences and foster deeper understanding, creativity, and academic success.</p>
                 </div>
-    
-                <!-- Links Section -->
+
                 <div class="col-12 col-md-4 mb-3">
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
@@ -58,7 +55,6 @@
                     </ul>
                 </div>
     
-                <!-- Contact Section -->
                 <div class="col-12 col-md-4 mb-3">
                     <h5>Contact Us</h5>
                     <p>Email: <a href="mailto:support@studify.com" class="text-light">support@studify.com</a></p>
@@ -73,7 +69,7 @@
     </footer>
 
     <script>
-        // Retrieve questions and validate
+        // recieving the question
         const questions = JSON.parse(sessionStorage.getItem('questions')) || [];
         const questionsList = document.getElementById('questions-list');
 
@@ -103,19 +99,19 @@
                 if (question.type === 'mcq') {
                     // Render MCQ options
                     const optionsHTML = question.options
-                        .map((option, optIndex) => {
+                        .map((options, optIndex) => {
                             const optionLabel = String.fromCharCode(65 + optIndex); // Convert 0->A, 1->B, etc.
                             return `
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="answer-${index}" id="option-${optionLabel}-${index}" value="${optionLabel}">
-                                    <label class="form-check-label" for="option-${optionLabel}-${index}">${option}</label>
+                                    <label class="form-check-label" for="option-${optionLabel}-${index}">${options}</label>
                                 </div>
                             `;
                         })
                         .join('');
                     questionHTML += optionsHTML;
                 } else if (question.type === 'theory') {
-                    const wordLimit = question.word_limit || 60;
+                    const wordLimit = word_limit || 60;
                     questionHTML += renderTextarea(index);
                 }
 
@@ -127,7 +123,7 @@
         document.getElementById('answers-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Collect user answers
+            // user ka answer
             const userAnswers = questions.map((_, index) => {
                 if (questions[index].type === 'mcq') {
                     return document.querySelector(`input[name="answer-${index}"]:checked`)?.value || null;
@@ -136,7 +132,7 @@
                 }
             });
 
-            // Verify the answers with the backend
+            // backend se user ka verification
             try {
                 const response = await fetch('/verify', {
                     method: 'POST',
