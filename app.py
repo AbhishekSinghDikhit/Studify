@@ -1,9 +1,8 @@
 from fastapi import FastAPI, Form, Request, UploadFile, File, Depends
-from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from google.generativeai import configure, GenerativeModel
 from PyPDF2 import PdfReader
@@ -96,14 +95,6 @@ def call_gemini_api(input_data, model):
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(questions.router, prefix="/questions", tags=["Questions"])
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -312,8 +303,7 @@ async def analyze(
                     questions.append({
                         "question": question,
                         "options": options,
-                        "correct_answer": correct_answer,
-                        "marks": marks_per_question
+                        "marks": marks_per_question 
                     })
                 except Exception as e:
                     logging.error(f"Error generating MCQ: {e}")
@@ -353,7 +343,6 @@ async def analyze(
                     questions.append({
                         "question": question,
                         "options": options,
-                        "correct_answer": correct_answer,
                         "marks": marks_per_question
                     })
                 except Exception as e:
