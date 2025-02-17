@@ -9,6 +9,7 @@ from PyPDF2 import PdfReader
 import logging
 import re
 import os
+from dotenv import load_dotenv
 import uvicorn
 import time
 import threading
@@ -17,10 +18,11 @@ from utils.user_profile import save_user_data
 from models.user import create_user, get_user_by_google_id
 from utils.database import initialize_db
 from routes import auth, questions
+import sqlite3
 
 
 logging.basicConfig(level=logging.INFO)
-
+load_dotenv()
 app = FastAPI()
 
 # Static and template directories
@@ -29,7 +31,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # initializing the gemini API
-configure(api_key="AIzaSyDGKtZ-K_xXzQMNsZdWIslYuiGFxE1CXG8")
+configure(api_key=os.getenv("API_KEY"))
 model = GenerativeModel("gemini-1.5-flash")
 
 # API ka rate limit
@@ -144,14 +146,6 @@ async def get_profile(token: str = Depends(oauth2_scheme)):
 async def qa_tool(request: Request):
     return templates.TemplateResponse("qa.html", {"request": request})
 
-@app.post("/saveUser")
-async def save_user(id_token: str):
-    user_data = save_user_data(id_token)
-    if user_data:
-        return {"message": "User data saved successfully", "user": user_data}
-    else:
-        return {"error": "Invalid token"}
-
 @app.get("/questionGenerator")
 async def question_generator(request: Request, user=Depends(get_current_user)):
     # if not user:
@@ -168,6 +162,65 @@ async def questions_page(request: Request, user=Depends(get_current_user)):
     # if not user:
     #     return RedirectResponse(url="/auth")
     return templates.TemplateResponse("questions.html", {"request": request, "user": user})
+
+# SQLite helper functions
+def init_db():
+    conn = sqlite3.connect('database.db')  # Ensure the database file name is correct
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        google_id TEXT UNIQUE,
+        name TEXT,
+        email TEXT,
+        picture_url TEXT
+    )
+    """)
+    conn.commit()
+    conn.close()
+
+def save_user_to_db(google_id, name, email, picture_url):
+    conn = sqlite3.connect('database.db')  # Correct database file name
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT OR IGNORE INTO users (google_id, name, email, picture_url) 
+    VALUES (?, ?, ?, ?)
+    """, (google_id, name, email, picture_url))
+    conn.commit()
+    conn.close()
+
+def fetch_user_from_db(google_id):
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT name, email, picture_url FROM users WHERE google_id = ?
+    """, (google_id,))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
+@app.post("/saveUser")
+async def save_user(request: Request):
+    try:
+        body = await request.json()  # Parse JSON from the request body
+        id_token = body.get("id_token")
+        if not id_token:
+            return JSONResponse({"error": "Missing id_token"}, status_code=400)
+        
+        user = verify_token(id_token)  # Token validation
+        if not user:
+            return JSONResponse({"error": "Invalid token"}, status_code=401)
+        
+        save_user_to_db(
+            google_id=user.get("sub"),
+            name=user.get("name"),
+            email=user.get("email"),
+            picture_url=user.get("picture")
+        )
+        return {"message": "User data saved successfully"}
+    except Exception as e:
+        logging.error(f"Error in saveUser: {e}")
+        return JSONResponse({"error": "Server error"}, status_code=500)
 
 @app.post("/summarize-pdf")
 async def summarize_pdf(pdfFile: UploadFile = File(...)):
@@ -188,7 +241,7 @@ async def summarize_pdf(pdfFile: UploadFile = File(...)):
         print("Error:", e)
         return JSONResponse(content={"error": "Failed to summarize the PDF"}, status_code=500)
     
-@app.post("/askQuestion")
+@app.post("/askQuestion") 
 async def ask_question(
     pdf_file: UploadFile = File(...),
     question: str = Form(...),
@@ -301,8 +354,7 @@ async def analyze(
 
                     # Add the question to the list
                     questions.append({
-                        "question": question,
-                        "options": options,
+                        "question": question_response.text.strip(),
                         "marks": marks_per_question 
                     })
                 except Exception as e:
@@ -341,8 +393,7 @@ async def analyze(
                     correct_answer = correct_answer_lines[0]
 
                     questions.append({
-                        "question": question,
-                        "options": options,
+                        "question": web_question_response.text.strip(),
                         "marks": marks_per_question
                     })
                 except Exception as e:
@@ -351,9 +402,10 @@ async def analyze(
 
         elif question_type.lower() == "theory":
             marks_distribution = [
-                (8, 250),  # 8-mark questions, 250 words
-                (4, 150),  # 4-mark questions, 150 words
-                (2, 60)    # 2-mark questions, 60 words
+                 (4, 150),  # 4-mark questions, 150 words
+                 (8, 250),  # 8-mark questions, 250 words
+                 (2, 60),    # 2-mark questions, 60 words
+                 (1, 30),    # 2-mark questions, 60 words
             ]
             remaining_marks = total_marks
             for marks, word_limit in marks_distribution:
@@ -365,7 +417,7 @@ async def analyze(
                         response = call_gemini_api(f"""
                             Generate a theory question worth {marks} marks with a word limit of {word_limit} words.
                             Topic: {topic}, Difficulty: {difficulty} and don't generate the marking scheme, also make 
-                            sure the question is different from previous one
+                            sure the question is different from previous one. ALso make the generated question concise.
                         """, model)
                         if response and response.text.strip():
                             questions.append({
@@ -384,5 +436,5 @@ async def analyze(
         return {"error": str(e)}
 
 if __name__ == "__main__":
-    initialize_db()
+    init_db()
     uvicorn.run("app:app", host="localhost", port=8000, reload=True)

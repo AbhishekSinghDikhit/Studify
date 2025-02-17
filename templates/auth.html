@@ -51,30 +51,24 @@
     const auth = getAuth(app);
     
     // checking authentication state
-      auth.onAuthStateChanged(function(user) {
-        window.onload = function() {
-            const profileSection = document.getElementById('profileSection');
-    
-            // Check if profileSection is present
-            if (profileSection) {
-                if (user) {
-                    profileSection.innerHTML = `
-                        <div>Welcome, ${user.displayName}</div>
-                        <div>Email: ${user.email}</div>
-                        <button onclick="signOut()">Sign Out</button>
-                    `;
-                } else {
-                    profileSection.innerHTML = `
-                        <button onclick="signIn()">Sign In</button>
-                    `;
-                }
-            } else {
-                console.error('profileSection is null');
-            }
-        };
-    });
-  
-    
+          document.addEventListener("DOMContentLoaded", () => {
+          auth.onAuthStateChanged(async (user) => {
+              const profileButton = document.getElementById("profileButton");
+              if (profileButton) {
+                  if (user) {
+                      profileButton.innerHTML = `<img src="${user.photoURL}" alt="Profile" />`;
+                      profileButton.onclick = () => window.location.href = "/profile";
+                  } else {
+                      profileButton.innerHTML = `<button>Login</button>`;
+                      profileButton.onclick = () => window.location.href = "/auth";
+                  }
+              } else {
+                  console.error("profileButton element not found.");
+              }
+          });
+      });
+
+
     // Google Sign-In Logic
     document.getElementById('google-signin').addEventListener('click', async () => {
       console.log("Sign-in button clicked");
@@ -90,17 +84,20 @@
         // Get the user's ID token
         const token = await user.getIdToken();
         if (token) {
-          localStorage.setItem("idToken", token)};
-        console.log("User token:", token);
-    
+            await fetch('/saveUser', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_token: token })
+            });
+        }    
         // Redirect to another page
         window.location.href = "/"; // Redirect after successful login
-      } catch (error) {
+      } catch(error) {
         console.error("Error during sign-in:", error);
         alert("Sign-in failed. Please try again.");
       }
-    });
+  });
     
-  </script>
+</script>
 </body>
 </html>

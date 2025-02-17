@@ -100,7 +100,7 @@
                     // Render MCQ options
                     const optionsHTML = question.options
                         .map((options, optIndex) => {
-                            const optionLabel = String.fromCharCode(65 + optIndex); // Convert 0->A, 1->B, etc.
+                            const optionLabel = String.fromCharCode(65 + optIndex); // Convert like 0->A, 1->B
                             return `
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="answer-${index}" id="option-${optionLabel}-${index}" value="${optionLabel}">
@@ -111,7 +111,7 @@
                         .join('');
                     questionHTML += optionsHTML;
                 } else if (question.type === 'theory') {
-                    const wordLimit = word_limit || 60;
+                    const wordLimit = question.word_limit || 60;
                     questionHTML += renderTextarea(index);
                 }
 

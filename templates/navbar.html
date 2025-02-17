@@ -1,9 +1,0 @@
-<nav>
-    <a href="/">Home</a>
-    {% if user %}
-      <span>Welcome, {{ user }}!</span>
-      <a href="/auth/logout">Logout</a>
-    {% else %}
-      <a href="/auth">Sign In</a>
-    {% endif %}
-  </nav>
