@@ -1,0 +1,43 @@
+name: Deploy FastAPI to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi uvicorn
+
+      - name: Generate static docs
+        run: |
+          mkdir -p site
+          echo "from fastapi import FastAPI" > main.py
+          echo "app = FastAPI()" >> main.py
+          echo "from fastapi.openapi.docs import get_swagger_ui_html" >> main.py
+          echo "from fastapi.responses import HTMLResponse" >> main.py
+          echo "@app.get('/docs', response_class=HTMLResponse)" >> main.py
+          echo "def docs(): return get_swagger_ui_html(title='API Docs', openapi_url='/openapi.json')" >> main.py
+          uvicorn main:app --port 8000 --host 0.0.0.0 --no-access-log &
+          sleep 5
+          curl http://127.0.0.1:8000/docs -o site/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
